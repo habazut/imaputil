@@ -1,0 +1,82 @@
+.\" THE BEER-WARE LICENSE (Revision 4711):
+.\" <rasmus@kaj.se> wrote this file.  As long as you retain this notice you
+.\" can do whatever you want with this stuff. If we meet some day, and
+.\" you think this stuff is worth it, you can buy me a beer in return.
+.\"
+.\" $Id: imap-quota.1,v 1.5 2007/12/18 12:35:52 rasmus Exp $
+.\"
+.\" Note: The date here should be updated whenever a non-trivial
+.\" change is made to the manual page.
+.Dd October 12, 2006
+.Dt imap-quota 1
+.\" Note: .Os with no arguments, since it's not specific to any OS.
+.Os
+.Sh NAME
+.Nm imap-quota
+.Nd Display the quota and usage of imap folders
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl s Ar host
+.Op Fl u Ar user
+.Op folders
+.Sh DESCRIPTION
+The 
+.Nm
+program checks the storage quota and usage for one or several imap folders.
+.Pp
+The options are as follows:
+.Bl -tag -width mmsmhost -compact
+.It Fl h
+Display a brief help message listing the options and exit.
+.It Fl s Ar host
+Use
+.Ar host
+as the imap server 
+(default is 
+.Qq imap
+).
+.It Fl u Ar user
+Username to use for authentication; defaults to the current user.
+.El
+.Pp
+All remaining arguments are folders to check the quotas for.
+If there are no remaining arguments, the folder INBOX is checked.
+.Pp
+For each folder, the quota root for the folder is found, and the quota
+and useage for that is defined.
+.Sh ENVIRONMENT
+All programs in the imaputil suite uses the following environment
+variable:
+.Bl -tag -width ".Ev MAILHOST"
+.It Ev MAILHOST
+Default hostname for the imap server.
+May include a colon followed by a port number.
+If not set,
+.Qq imap
+is used as a default.
+.El
+.\".Sh EXAMPLES
+.\".Sh DIAGNOSTICS
+.Sh COMPATIBILITY
+The
+.Nm
+program assumes that the imap server has the imap QUOTA extension, as
+described in RFC 2087.
+.Sh SEE ALSO
+imap-append(1),
+imap-du(1),
+imap-from(1),
+imap-msgchk(1)
+.Pp
+http://www.stacken.kth.se/~kaj/hack/imaputil
+.Pp
+RFC2060, imap v4r1.
+RFC2087, IMAP4 QUOTA extension.
+.Sh AUTHOR
+.Nm
+and its manual page was written by
+.An Rasmus Kaj Aq kaj@kth.se .
+.Sh BUGS
+Please report any you might find to
+.An Rasmus Kaj Aq kaj@kth.se .

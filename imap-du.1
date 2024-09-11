@@ -1,0 +1,114 @@
+.\" THE BEER-WARE LICENSE (Revision 4711):
+.\" <rasmus@kaj.se> wrote this file.  As long as you retain this notice you
+.\" can do whatever you want with this stuff. If we meet some day, and
+.\" you think this stuff is worth it, you can buy me a beer in return.
+.\"
+.\" $Id: imap-du.1,v 1.9 2007/12/18 12:35:52 rasmus Exp $
+.\"
+.\" Note: The date here should be updated whenever a non-trivial
+.\" change is made to the manual page.
+.Dd October 3, 2002
+.Dt imap-du 1
+.\" Note: .Os with no arguments, since it's not specific to any OS.
+.Os
+.Sh NAME
+.Nm imap-du
+.Nd Get the size of a folder with sub folders
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl b
+.Op Fl k
+.Op Fl q
+.Op Fl s Ar host
+.Op Fl u Ar user
+.Op Fl x
+.Op folders
+.Sh DESCRIPTION
+The 
+.Nm
+program sums the size of the messages on an imap server.
+By default, sub-folders are listed and included in the sum, just like
+in du(1).
+.Pp
+The options are as follows:
+.Bl -tag -width mmsmhost -compact
+.It Fl h
+Display a brief help message listing the options and exit.
+.It Fl b
+Gives the output sizes in bytes.
+.It Fl k
+Gives the output sizes in kilobytes.
+.It Fl q
+Quiet.
+Does not show the size and number of messages local to each folder as
+well as the sum (with sub folders).
+.It Fl s Ar host
+Use
+.Ar host
+as the imap server 
+(default is 
+.Qq imap
+).
+.It Fl u Ar user
+Username to use for authentication; defaults to the current user.
+.It Fl x
+Give output suitable to xdu(1); no parentheses, all sizes in
+kilobytes, and the separating "." is replaced by "/" .
+.El
+.Pp
+All remaining arguments are folders to check.
+If there are no remaining arguments, the folder INBOX is checked.
+.Sh ENVIRONMENT
+All programs in the imaputil suite uses the following environment
+variable:
+.Bl -tag -width ".Ev MAILHOST"
+.It Ev MAILHOST
+Default hostname for the imap server.
+May include a colon followed by a port number.
+If not set,
+.Qq imap
+is used as a default.
+.El
+.Sh EXAMPLES
+The following is a sample of
+.Nm
+run on a (rather small) set of folders.
+.Pp
+: prompt ; 
+.Nm
+.br
+7k      INBOX.foo (7k in 3 msgs)
+.br
+423k    INBOX.bar (423k in 268 msgs)
+.br
+32k     INBOX.baz (32k in 10 msgs)
+.br
+494k    INBOX (30k in 9 msgs)
+.Pp
+The numbers within parenthesis are the size and number of messages
+directly in each folder (these are skipped by the
+.Fl q
+flag).
+The sizes before the folder name is the size for each folder with
+sub folders, so 494k is the total size of the four folders.
+.\".Sh DIAGNOSTICS
+.\".Sh COMPATIBILITY
+.Sh SEE ALSO
+du(1),
+imap-append(1),
+imap-from(1),
+imap-msgchk(1),
+imap-qouta(1),
+xdu(1)
+.Pp
+http://www.stacken.kth.se/~kaj/hack/imaputil
+.Pp
+RFC2060, imap v4r1.
+.Sh AUTHOR
+.Nm
+and its manual page was written by
+.An Rasmus Kaj Aq kaj@kth.se .
+.Sh BUGS
+Please report any you might find to
+.An Rasmus Kaj Aq kaj@kth.se .

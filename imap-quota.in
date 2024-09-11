@@ -1,0 +1,34 @@
+#! @PERL@ -w
+# $Id: imap-quota.in,v 1.5 2006/10/12 20:00:22 kaj Exp $
+# Note: This command uses the GETQUOTAROOT command from rfc2087.
+use strict;
+use Getopt::Std;
+use lib qw(@prefix@/lib);
+use ImtestImap;
+
+my %opts;
+getopts('hs:u:', \%opts);
+if(defined $opts{h}) {
+    print "Usage: $0 [args] [folders]\n\n"
+	. "\t-h\tGives this helpfull message\n"
+	. "\t-s host\tUse host as the imap server\n"
+	. "\t-u user\tLog in to the imap server as the specified user\n";
+    exit 0;
+}
+
+my $imap = new ImtestImap($opts{s}, $opts{u})
+    || die "Failed to connect to imap server $opts{s} as user $opts{u}\n";
+
+@ARGV = ('INBOX') if($#ARGV == -1);
+
+foreach my $folder (@ARGV) {
+    $imap->cmd_cb("GETQUOTAROOT $folder",
+		  sub {
+		      ($_) = @_;
+		      if(/QUOTA ([^ ]+) \(STORAGE ([0-9]+) ([0-9]+)\)/) {
+			  print "$1 using $2 kilobytes out of $3 ("
+			      . 100*$2/$3. "%)\n";
+		      }
+		  })
+	|| die "Failed to get quota for $folder\n";
+}

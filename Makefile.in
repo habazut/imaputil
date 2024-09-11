@@ -1,0 +1,48 @@
+# Makefile for imaputil
+# $Id: Makefile.in,v 1.10 2008/01/17 20:52:05 rasmus Exp $
+
+# Define this to where imaputil should be installed.
+PREFIX=		@prefix@
+prefix=		@prefix@
+PERL=		@PERL@
+
+srcdir	=	@srcdir@
+
+INSTALL =	@INSTALL@
+
+INSTALL_LIB = 	@INSTALL_DATA@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_SCRIPT =@INSTALL_SCRIPT@
+INSTALL_MAN = 	@INSTALL_DATA@
+
+VERSION=	0.6
+DISTNAME=	imaputil-$(VERSION)
+
+PROGRAMS=	imap-du imap-from imap-msgchk imap-quota imap-append
+BINDIR=	$(PREFIX)/bin/
+LIBDIR=	$(PREFIX)/lib/
+MAN1DIR= @mandir@/man1/
+
+all:
+
+install:
+	mkdir -p $(LIBDIR)
+	$(INSTALL_LIB) $(srcdir)/ImtestImap.pm $(LIBDIR)
+	mkdir -p $(BINDIR)
+	for p in $(PROGRAMS); do \
+		$(INSTALL_SCRIPT) $$p $(BINDIR); \
+	done
+	mkdir -p $(MAN1DIR)
+	for m in $(PROGRAMS:%=%.1); do \
+		if test -f $(srcdir)/$$m; then \
+			$(INSTALL_MAN) $(srcdir)/$$m $(MAN1DIR); \
+		else \
+			$(INSTALL_MAN) $$m $(MAN1DIR); \
+		fi \
+	done
+
+dist:
+	cvs export -r RELEASE_$(subst .,_,$(VERSION)) -d $(DISTNAME) imaputil
+	cd $(DISTNAME) && autoconf
+	tar cjf $(DISTNAME).tar.bz2 $(DISTNAME)
+	rm -r $(DISTNAME)

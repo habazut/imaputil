@@ -1,0 +1,118 @@
+#! @PERL@ -w
+# $Id: imap-from.in,v 1.12 2007/12/17 21:30:33 rasmus Exp $
+use strict;
+use Getopt::Std;
+use lib qw(@prefix@/lib);
+use ImtestImap;
+use Text::Tabs;
+
+my ($limit, $width) = (10, 0);
+
+my %opts;
+getopts('hal:rs:u:w:z', \%opts);
+if(defined $opts{h}) {
+    print "Usage: $0 -z -h folders\n\n"
+	. "\t-h\tGives this helpfull message\n"
+	. "\t-a\tShow address only for the senders\n"
+	. "\t-l num\tShow only num messages per folder (default is $limit)\n"
+	. "\t-r\tShow real name only for the senders\n"
+	. "\t-s host\tUse host as the imap server\n"
+	. "\t-u user\tLog in to the imap server as the specified user\n"
+	. "\t-w num\tMake sure output fits in a num characters wide terminal\n"
+	. "\t-z\tGives \"zephyr markup\" in the output (deprecated).\n"
+	. "\nSample:\n\t$0 INBOX INBOX.foo lists.freebsd.ports\n";
+    exit 0;
+}
+
+my ($start_h, $end_h) = 
+    (defined $opts{z}
+     ? ('@font(-*-helvetica-bold-o-*-*-18-*)', '@font(courier)')
+     : ('', ''));
+$limit = $opts{l} if defined $opts{l};
+$width = $opts{w} if defined $opts{w};
+my $realnames = defined $opts{r};
+my $addronly  = defined $opts{a};
+
+my $imap = new ImtestImap($opts{s}, $opts{u})
+    || die "Failed to connect to imap server $opts{s} as user $opts{u}\n";
+$imap->cmd('NOOP');
+
+@ARGV = ('INBOX') if($#ARGV == -1);
+
+foreach my $folder (@ARGV) {
+    my ($unseen, $exists);
+    $imap->cmd_cb("EXAMINE $folder",
+		  sub {
+		      ($_) = @_;
+		      $exists = $1 if /([0-9]+) EXISTS/; 
+		      $unseen = $1 if /UNSEEN ([0-9]+)/;
+		  })
+	|| die "No such folder: $folder\n";
+    
+    if(defined $unseen && defined $exists) {
+	print "$start_h$folder$end_h\n" unless ($#ARGV == 0);
+	if($exists - $unseen > $limit) {
+	    print "To many (potential) unseen messages, limiting to $limit.\n";
+	    $unseen = $exists - ($limit -1);
+	}
+	my @rows;
+	$imap->cmd("FETCH $unseen:$exists"
+		   . ' (FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT)])',
+		   \@rows);
+	my ($subject, $from, $flags) = ('', '', '');
+	foreach(@rows) {
+	    chop; chop;
+#	    print ">>>$_\n";
+	    if(/\* ([0-9]+) FETCH \(FLAGS \(([^\)]*)\)/) {
+#		print "... Msg ...\n";
+		$flags = $2;
+		$subject = '';
+		$from = '';
+	    } elsif(/^Subject: (.*)$/) {
+		$subject = $1;
+	    } elsif(/^From: (.*)$/) {
+		$from = $1;
+	    } elsif(/^\)$/ && $flags !~ /Seen/) {
+		if($realnames
+		   && $from =~ /^([^<]+[^ <])/) {
+		    $from = $1;
+		}
+		if($addronly && $from =~ /<([^>]+)>/) {
+		    $ from = $1;
+		}
+		my $line = expand(unquote("$from\t$subject"));
+		if($width && (length($line) > $width)) {
+		    $line = substr($line, 0, $width - 4) . '...';
+		}
+		print $line, "\n";
+	    }
+	}
+	print "\n" unless ($#ARGV == 0);
+    } else {
+	print "No unseen mail in $folder\n\n"
+    }
+}
+
+sub unquotesub {
+    my ($line, $metod, $encoding) = @_;
+    # Note: Instead of checking for iso-8859-1, I should check for the
+    # current locale setting, except that often don't have a value and
+    # it might be harder to map to with some flexibility.
+    # As for unknown-8bit, just check.
+    if ($metod =~ /[Qq]/ 
+	&& ($encoding =~ /^[Ii][Ss][Oo][-_]?8859[-_]1$/ ||
+	    $encoding eq 'unknown-8bit')) {
+	$line =~ s/=([0-9A-Fa-f]{2})/pack('H2', $1)/eg;
+	$line =~ s/_/ /g;
+	return $line;
+    } elsif ($metod =~ /[Bb]/) {
+#	$line = decode_base64($line);
+    }
+    return "=?$encoding?$metod?$line?=";
+}
+
+sub unquote {
+    my ($l) = @_;
+    $l =~ s/=\?([^\?]*)\?(q|Q|B|b)\?([^\?]*)\?=/unquotesub($3, $2, $1)/ge;
+    $l;
+}

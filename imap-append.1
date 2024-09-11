@@ -1,0 +1,90 @@
+.\" THE BEER-WARE LICENSE (Revision 4711):
+.\" <haba@stacken.kth.se> and <rasmus@kaj.se> wrote this file.  As
+ \" long as you retain this notice you can do whatever you want with
+ \" this stuff. If we meet some day, and you think this stuff is worth
+ \" it, you can buy me a beer in return.
+.\"
+.\" $Id: imap-append.1,v 1.6 2007/12/18 12:35:52 rasmus Exp $
+.\"
+.\" Note: The date here should be updated whenever a non-trivial
+.\" change is made to the manual page.
+.Dd December 17, 2007
+.Dt imap-append 1
+.\" Note: .Os with no arguments, since it's not specific to any OS.
+.Os
+.Sh NAME
+.Nm imap-append
+.Nd Append one or more files to an IMAP folder
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl s Ar host
+.Op Fl u Ar user
+.Op Fl m Ar message
+.Op Fl f Ar folder
+.Sh DESCRIPTION
+The 
+.Nm
+program appends one or more files to the folder on the imap server.
+If the folder does not exist, it is created.
+.Pp
+The options are as follows:
+.Bl -tag -width mmsmhost -compact
+.It Fl h
+Display a brief help message listing the options and exit.
+.It Fl s Ar host
+Use
+.Ar host
+as the imap server 
+(default is 
+.Qq imap
+).
+.It Fl u Ar user
+Username to use for authentication; defaults to the current user.
+.It Fl m Ar message
+Use the file or all the files in the directory named
+.Ar message
+and append them to the imapfolder one by one. The file or
+directory should exist and your IMAP server may dislike empty
+files, which
+.Nm
+will upload if told so.
+.It Fl f Ar folder
+Use 
+.Ar folder
+as the IMAP folder to append the message(s) to. The folder
+is created if it does not exist.
+.El
+.Pp
+.Sh ENVIRONMENT
+All programs in the imaputil suite uses the following environment
+variable:
+.Bl -tag -width ".Ev MAILHOST"
+.It Ev MAILHOST
+Default hostname for the imap server.
+May include a colon followed by a port number.
+If not set,
+.Qq imap
+is used as a default.
+.El
+.\".Sh EXAMPLES
+.\".Sh DIAGNOSTICS
+.\".Sh COMPATIBILITY
+.Sh SEE ALSO
+imap-du(1),
+imap-from(1),
+imap-msgchk(1),
+imap-qouta(1)
+.Pp
+http://www.stacken.kth.se/~kaj/hack/imaputil
+.Pp
+RFC2060, imap v4r1.
+.Sh AUTHOR
+.Nm
+and its manual page was written by
+.An Harald Barth Aq haba@stacken.kth.se
+and
+.An Rasmus Kaj Aq kaj@kth.se .
+.Sh BUGS
+Please report any you might find to
+.An Rasmus Kaj Aq kaj@kth.se .

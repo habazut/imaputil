@@ -1,0 +1,28 @@
+AC_INIT(ImtestImap.pm)
+
+AC_ARG_WITH(perl,       [  --with-perl=PERL        use PERL for perl],
+        with_perl="$withval")
+
+if test "X${with_perl}" = Xyes|| test "X${with_perl}" = X; then
+	AC_CHECK_PROGS(PERL, perl)
+	if test "X${PERL}" = "X"; then
+	   AC_ERROR(Couldn't find perl)
+	fi
+elif test "X${with_perl}" = Xno || test "X${with_perl}" = X; then
+        AC_ERROR(Need perl)
+else
+	PERL=${with_perl}
+	AC_SUBST(PERL)
+fi
+
+AC_PROG_INSTALL
+
+
+AC_OUTPUT(
+	imap-du
+	imap-from
+	imap-msgchk
+	imap-quota
+	imap-append
+	Makefile
+) 

@@ -1,0 +1,48 @@
+#! @PERL@ -w
+# $Id: imap-msgchk.in,v 1.11 2007/12/17 21:22:20 rasmus Exp $
+use strict;
+use Getopt::Std;
+use lib qw(@prefix@/lib);
+use ImtestImap;
+
+my ($lcmd, $base) = ('LSUB', '');
+
+my %opts;
+getopts('hb:s:u:Uq', \%opts);
+if(defined $opts{h}) {
+    print "Usage: $0 [options]\nWhere options may include:\n\n"
+	. "\t-h\tGives this helpfull message\n"
+	. "\t-b base\tOnly include subfolders of base (included)\n"
+	. "\t-s host\tUse host as the imap server\n"
+	. "\t-u user\tLog in to the imap server as the specified user\n"
+	. "\t-U\tInclude unsubscribed folders in the listing\n"
+	. "\t-q\t(quiet) Supress heading\n";
+    exit 0;
+}
+
+$base = $opts{b} if defined $opts{b};
+$lcmd = 'LIST'   if defined $opts{U};
+
+my $imap = new ImtestImap($opts{s}, $opts{u})
+    || die "Failed to connect to imap server $opts{s} as user $opts{u}\n";
+$imap->cmd('NOOP');
+
+print "UNREAD\tTOTAL\tFOLDER\n" unless defined $opts{q};
+
+my @rows;
+my $result = $imap->cmd("$lcmd \"$base\" *", \@rows);
+foreach (@rows) {
+    if(/$lcmd .* \"([^\"]*)\"/) {
+	my $box = $1;
+	$imap->cmd_cb("STATUS $box (MESSAGES UNSEEN)",
+		   sub {
+		       ($_) = @_;
+		       if(/STATUS $box \(MESSAGES (\d+) UNSEEN (\d+)\)/) {
+			   print "$2\t$1\t$box\n";
+		       } else {
+			   print;
+		       }
+		   })
+	    || die("Folder $box mysteriously disappeared.\n");
+    }
+}

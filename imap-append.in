@@ -1,0 +1,62 @@
+#! @PERL@ -w
+# $Id: imap-append.in,v 1.3 2008/01/17 20:43:37 rasmus Exp $
+use strict;
+use Getopt::Std;
+use lib qw(@prefix@/lib);
+use ImtestImap;
+use POSIX qw(strftime);
+
+my $usage = "Usage: $0 [-h] \n";
+
+my %opts;
+getopts('hb:s:u:Uqf:m:', \%opts) || die $usage;
+if(defined $opts{h}) {
+    print "$usage\nWhere options may include:\n\n"
+	. "\t-h\tGives this helpfull message\n"
+	. "\t-s host\tUse host as the imap server\n"
+	. "\t-u user\tLog in to the imap server as the specified user\n"
+	. "\t-m message\tFile or directory containing the messages to append\n"
+	. "\t-f\tFolder (on IMAP server, will be crated if necessary)\n";
+    exit 0;
+}
+
+my $imap = new ImtestImap($opts{s}, $opts{u})
+    || die "Failed to connect to imap server $opts{s} as user $opts{u}\n";
+$imap->cmd('NOOP');
+
+defined $opts{f} || die "Need Folder name\n";
+my $folder = $opts{f};
+$imap->cmd("CREATE $folder") && $imap->cmd("SUBSCRIBE $folder") && print "Created mailbox $folder\n";
+
+defined $opts{m} || die "Need message or dir name\n";
+my $dirorfile = $opts{m};
+my @msgfiles;
+if (-d $dirorfile) {
+    opendir( DIR, "$dirorfile");
+    @msgfiles = map ("$dirorfile/$_", sort {$a <=> $b} grep { /^[1-9][0-9]*$/ && -f "$dirorfile/$_" } readdir(DIR) );
+} else {
+    @msgfiles = ( $dirorfile, );
+}
+
+foreach my $message (@msgfiles) {
+
+    my @statinfo = stat($message);
+    my $ctime = $statinfo[9];
+    my $imapdate = strftime("%e-%b-%Y %T +0000", gmtime ($ctime) );
+
+    my $data = "";
+    open(DATA, "<$message");
+    while(<DATA>) {
+	chomp;
+	$data .= "$_\r\n";
+    }
+    my $bytes = do { use bytes; length($data) };
+
+
+    my $result = $imap->cmd_data("APPEND $folder (\\Seen) \"$imapdate\" {$bytes}", $data);
+    if ($result) {
+	print "Uploaded $message\n";
+    } else {
+	print "Error $message\n";
+    }
+}

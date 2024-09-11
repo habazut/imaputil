@@ -1,0 +1,95 @@
+#! @PERL@ -w
+# $Id: imap-du.in,v 1.9 2007/12/17 21:27:18 rasmus Exp $
+use strict;
+use Getopt::Std;
+use lib qw(@prefix@/lib);
+use ImtestImap;
+use POSIX qw(ceil);
+
+my %opts;
+getopts('hbkqs:u:x', \%opts);
+if(defined $opts{h}) {
+    print "Usage: $0 [options] [basefolder] \n\n"
+	. "\t-h\tGives this helpfull message\n"
+	. "\t-b\tGives output in bytes\n"
+	. "\t-k\tGives output in kilobytes\n"
+	. "\t-q\tQuiet, do not show local size and number of messages\n"
+	. "\t-s host\tUse host as the imap server\n"
+	. "\t-u user\tLog in to the imap server as the specified user\n"
+	. "\t-x\tFormats the output suitable for xdu\n";
+    exit 0;
+}
+
+my $quiet = defined $opts{q};
+my $xdu = defined $opts{x};
+
+my $imap = new ImtestImap($opts{s}, $opts{u})
+    || die "Failed to connect to imap server $opts{s} as user $opts{u}\n";
+$imap->cmd('NOOP');
+
+@ARGV = ('INBOX') if($#ARGV == -1);
+
+foreach my $base (@ARGV) {
+    my @rows;
+    my $result = $imap->cmd("LIST \"$base\" *", \@rows);
+    my ($parent) = (0, '');
+    my %total;
+    foreach (reverse @rows) {
+        if(/LIST .* \"([^\"]*)\"/) {
+	    my $box = $1;
+
+	    my ($size, $num) = sumfolder($box);
+	    my $p = $box;
+	    while($p ne $base) {
+	        $p =~ s/\.[^.]*$//;
+		$total{$p} += $size;
+	    }
+	    $total{$box} += $size;
+	    if($xdu) {
+		my $path = $box;
+		$path =~ s/\./\//g;
+		print ceil($total{$box}/1024), "\t$path\n";
+	    } else {
+		print nicenum($total{$box}), "\t$box";
+		print " (", nicenum($size), " in $num msgs)" unless $quiet;
+		print "\n";
+	    }
+	}
+    }
+}
+
+sub sumfolder {
+    my ($folder) = @_;
+    my $exists;
+    $imap->cmd_cb("EXAMINE $folder", 
+		  sub { ($_) = @_; $exists = $1 if /([0-9]+) EXISTS/; })
+      || die "No such folder $folder\n";
+
+    if(defined $exists) {
+        my ($total, $num) = (0, 0);
+	$imap->cmd_cb("FETCH 0:$exists (RFC822.SIZE)", sub {
+			 ($_) = @_;
+			 ++$num;
+			 $total += $1 if /FETCH \(RFC822.SIZE ([0-9]+)\)/;
+		       });
+	# Hmm ... NO is ok (empty folder), but BAD is missing folder
+	#  || die("Failed to get message sizes\n");
+	return ($total, $num);
+    }
+}
+
+sub nicenum {
+    my ($num) = @_;
+    if(defined $opts{b}) {
+	return $num;
+    } elsif(defined $opts{k}) {
+	return int($num / 1024);
+    } else {
+	if($num > 2 * 1024 * 1024) {
+	    $num = int($num / 1024 / 1024) . 'M';
+	} elsif($num > 2 * 1024) {
+	    $num = int($num / 1024) . 'k';
+	}
+	return $num;
+    }
+}
